@@ -1,0 +1,16 @@
+SizeScale,SizeScaleUnits,NumberOfSimulations,MinPressure,MaxPressure,PressureUnits,MeshSizeFactor,CompressionTestDisplacementFactor,MovementSpeed,MovementSpeedUnits,MaterialName,Density,DensityUnit,YoungsModulus,YoungsModulusUnit,PoissonsRatio,RelativeModuli,RelaxationTime,RelaxationTimeUnit
+1.00E-04,m,2,5.00E+05,4.00E+06,Pa,5,5,0.5,m/s,Viscoelastic Rubber,1000,kg m^-3,7.33E+06,Pa,0.4994,0.0020847,2738.4,s
+,,,,,,,,,,,,,,,,0.001145,298.54,
+,,,,,,,,,,,,,,,,0.002038,32.546,
+,,,,,,,,,,,,,,,,0.002354,3.5481,
+,,,,,,,,,,,,,,,,0.0032522,0.38681,
+,,,,,,,,,,,,,,,,0.0046438,0.04217,
+,,,,,,,,,,,,,,,,0.0094109,0.0045973,
+,,,,,,,,,,,,,,,,0.02296,0.00050119,
+,,,,,,,,,,,,,,,,0.055435,5.46E-05,
+,,,,,,,,,,,,,,,,0.13669,5.96E-06,
+,,,,,,,,,,,,,,,,0.25698,6.49E-07,
+,,,,,,,,,,,,,,,,0.24128,7.08E-08,
+,,,,,,,,,,,,,,,,0.10928,7.72E-09,
+,,,,,,,,,,,,,,,,0.036583,8.41E-10,
+,,,,,,,,,,,,,,,,0.096349,9.17E-11,

@@ -1,0 +1,104 @@
+*CONTACT_AUTOMATIC_SURFACE_TO_SURFACE
+$ ssid,msid,sstyp,mstyp,sboxid,mboxid,spr,mpr
+1,2,3,3,0,0,1,1
+$ fs,fd,dc,vc,vdc,penchk,bt,dt
+2,1,0,0,10,0,0,0
+$ sfs,sfm,sst,mst,sfst,sfmt,fsf,vsf
+0,0,0,0,0,0,0,0
+$ soft,softscl,lcidab,maxpar,sbopt,depth,bsort,frcfrq
+2,0.1,0,0,3,5,0,0
+$ penmax,tkhopt,shlthk,snlog,isym,i2d3d,sldthk,sldstf
+0,0,0,0,0,0,0,0
+*DEFINE_TABLE
+1
+$ Pressure value vs Curve ID
+26182.051722,100
+115442.230255,101
+221563.133222,102
+330844.373440,103
+445423.454135,104
+584945.830184,105
+715502.111058,106
+858006.276502,107
+1007241.656752,108
+1165709.017614,109
+1336621.009796,110
+1519893.650285,111
+1702792.471249,112
+1900680.501157,113
+2115987.652909,114
+*DEFINE_CURVE
+100
+$ Relative velocity vs COF
+0,0.036336
+100,0.036336
+*DEFINE_CURVE
+101
+$ Relative velocity vs COF
+0,0.043499
+100,0.043499
+*DEFINE_CURVE
+102
+$ Relative velocity vs COF
+0,0.050191
+100,0.050191
+*DEFINE_CURVE
+103
+$ Relative velocity vs COF
+0,0.059536
+100,0.059536
+*DEFINE_CURVE
+104
+$ Relative velocity vs COF
+0,0.059176
+100,0.059176
+*DEFINE_CURVE
+105
+$ Relative velocity vs COF
+0,0.085183
+100,0.085183
+*DEFINE_CURVE
+106
+$ Relative velocity vs COF
+0,0.059395
+100,0.059395
+*DEFINE_CURVE
+107
+$ Relative velocity vs COF
+0,0.062143
+100,0.062143
+*DEFINE_CURVE
+108
+$ Relative velocity vs COF
+0,0.060927
+100,0.060927
+*DEFINE_CURVE
+109
+$ Relative velocity vs COF
+0,0.062829
+100,0.062829
+*DEFINE_CURVE
+110
+$ Relative velocity vs COF
+0,0.065117
+100,0.065117
+*DEFINE_CURVE
+111
+$ Relative velocity vs COF
+0,0.067738
+100,0.067738
+*DEFINE_CURVE
+112
+$ Relative velocity vs COF
+0,0.069564
+100,0.069564
+*DEFINE_CURVE
+113
+$ Relative velocity vs COF
+0,0.073911
+100,0.073911
+*DEFINE_CURVE
+114
+$ Relative velocity vs COF
+0,0.071205
+100,0.071205
