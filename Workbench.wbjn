@@ -1,0 +1,233 @@
+# encoding: utf-8
+# 2021 R2
+
+SetScriptVersion(Version="21.2.209")
+
+import os
+from inspect import getsourcefile
+import xml.etree.ElementTree as ET
+import csv
+import sys
+
+# Get working directory path
+workingDirectory = os.path.dirname(getsourcefile(lambda:0))
+
+# Add Scripts directory to local import path
+scriptFolderPath = os.path.join(workingDirectory, "Scripts")
+sys.path.append(scriptFolderPath)
+
+import ImportExportUtilities
+import PostProcessing
+
+def setEngineeringData(config, position = None, relativeTo = None):
+    # Create Engineering Data System
+    template1 = GetTemplate(TemplateName="EngData")
+    engineeringDataSys = template1.CreateSystem(Position = position, RelativeTo = relativeTo)
+    
+    # Define custom Viscoelastic Rubber material
+    engineeringData = engineeringDataSys.GetContainer(ComponentName="Engineering Data")
+    viscoelasticRubber = engineeringData.CreateMaterial(Name=config["MaterialName"])
+
+    # Define density property
+    densityQuantity = "{} [{}]".format(config["Density"], config["DensityUnit"])
+    density = viscoelasticRubber.CreateProperty(
+        Name="Density",
+        Qualifiers={"Definition": "", "Behavior": ""})
+    density.SetData(
+        Index=-1,
+        Variables=["Density"],
+        Values=[[densityQuantity]])
+    density.SetData(
+        SheetName="Density",
+        SheetQualifiers={"Definition": "", "Behavior": ""},
+        Variables=["Temperature"],
+        Values=[["22 [C]"]])
+
+    # Define isotropic elasticity property
+    isotropicElasticity = viscoelasticRubber.CreateProperty(
+        Name="Elasticity",
+        Behavior="Isotropic",
+        Qualifiers={"Definition": "", "Behavior": "Isotropic"})
+
+    # Define Young's Modulus
+    youngsModulusQuantity = "{} [{}]".format(config["YoungsModulus"], config["YoungsModulusUnit"])
+    isotropicElasticity.SetData(
+        Index=-1,
+        Variables=["Young's Modulus"],
+        Values=[[youngsModulusQuantity]])
+
+    # Define Poisson's Ratio
+    poissonsRatio = config["PoissonsRatio"]
+    isotropicElasticity.SetData(
+        Variables=["Poisson's Ratio"],
+        Values=[[poissonsRatio]])
+
+    # Derive elastic properties from Young's Modulus and Poisson's Ratio
+    isotropicElasticity.SetData(
+        SheetName="Elasticity",
+        SheetQualifiers={"Definition": "", "Behavior": "Isotropic", "Derive from": "Young's Modulus and Poisson's Ratio"},
+        Variables=["Temperature"],
+        Values=[["22 [C]"]])
+
+    # Define Prony series shear relaxation property
+    pronyShearRelaxation = viscoelasticRubber.CreateProperty(
+        Name="Prony",
+        Definition="Shear Relaxation",
+        Qualifiers={"Definition": "Shear Relaxation", "Behavior": ""})
+
+    # Set number of terms
+    numTerms = str(len(config["RelativeModuli"]))
+    pronyShearRelaxation.SetQualifier(
+        Qualifier="Number of Terms",
+        Value=numTerms)
+
+    # Input Prony Series terms
+    for i, (relativeModuli, relaxationTime) in enumerate(zip(config["RelativeModuli"], config["RelaxationTime"])):
+        relaxationTimeQuantity = "{} [{}]".format(relaxationTime, config["RelaxationTimeUnit"])
+        pronyShearRelaxation.SetData(
+            SheetName="Prony",
+            SheetQualifiers={"Definition": "Shear Relaxation", "Behavior": "", "Number of Terms": numTerms},
+            Index=i,
+            Variables=["Relative Moduli(i)"],
+            Values=[[relativeModuli]])
+        pronyShearRelaxation.SetData(
+            SheetName="Prony",
+            SheetQualifiers={"Definition": "Shear Relaxation", "Behavior": "", "Number of Terms": numTerms},
+            Index=i,
+            Variables=["Relaxation Time(i)"],
+            Values=[[relaxationTimeQuantity]])
+
+    return engineeringDataSys
+
+def setGeometry(position = None, relativeTo = None):
+    # Create Geometry System
+    template2 = GetTemplate(TemplateName="Geometry")
+    geometrySys = template2.CreateSystem(Position = position,
+        RelativeTo = relativeTo)
+
+    # Locate geometry file
+    path = os.path.join(workingDirectory, "Geometry")
+    files = [file for file in os.listdir(path) if file.endswith(".agdb")]
+    filename = files[0]
+    geometryPath = os.path.join(path, filename)
+
+    # Import geometry into Geometry System
+    geometry = geometrySys.GetContainer(ComponentName="Geometry")
+    geometry.SetFile(FilePath=geometryPath)
+    geometrySys.DisplayText = filename.split('.')[0]
+
+    return geometrySys
+
+def createLs_Dyna(name, engineeringDataSys, geometrySys, position = None, relativeTo = None):
+    # Create LS-Dyna System and connect to Engineering Data and Geometry
+    template3 = GetTemplate(TemplateName="LSDYNA")
+    ls_DynaSys = template3.CreateSystem(
+        Position = position,
+        RelativeTo = relativeTo)
+
+    engineeringDataComponent1 = ls_DynaSys.GetComponent(Name="Engineering Data")
+    engineeringDataComponent2 = engineeringDataSys.GetComponent(Name="Engineering Data")
+    engineeringDataComponent1.ReplaceWithShare(
+        TargetSystem=ls_DynaSys,
+        ComponentToShare=engineeringDataComponent2,
+        SourceSystem=engineeringDataSys)
+
+    geometryComponent1 = ls_DynaSys.GetComponent(Name="Geometry")
+    geometryComponent2 = geometrySys.GetComponent(Name="Geometry")
+    geometryComponent1.ReplaceWithShare(
+        TargetSystem=ls_DynaSys,
+        ComponentToShare=geometryComponent2,
+        SourceSystem=geometrySys)
+
+    ls_DynaSys.DisplayText = name
+
+    return ls_DynaSys
+
+def runScript(sys, containerName, scriptFilePath, isSpaceClaimScript=False):
+    # Load the script
+    with open(scriptFilePath, 'r') as scriptFile:
+        script = scriptFile.read()
+
+    # Retrieve the Model container
+    model = sys.GetContainer(containerName)
+
+    # Run the script on the specified container
+    if isSpaceClaimScript:
+        model.Edit(Interactive = True, IsSpaceClaimGeometry = True)
+    else:
+        model.Edit(Interactive = True)
+    model.SendCommand(Language = "Python", Command = script)
+
+# Parse the workflow configuration file
+config = ImportExportUtilities.importConfig(os.path.join(workingDirectory, "Config", "Config.csv"))
+
+# Set up Engineering Data system with imported viscoelastic material data
+engineeringDataSys = setEngineeringData(config)
+
+# Set up Geometry system with imported geometry
+geometrySys = setGeometry("Below", engineeringDataSys)
+
+# Create an LS-Dyna system for the initial Compression Test
+ls_DynaCompressionTest = createLs_Dyna("Compression Test", engineeringDataSys, geometrySys, "Right", engineeringDataSys)
+
+# Number of Sliding Simulations from the Config file
+numSims = int(config["NumberOfSimulations"])
+
+# Create a series of LS-Dyna systems for the Sliding Tests
+ls_DynaSims = [createLs_Dyna(str(0), engineeringDataSys, geometrySys, "Below", ls_DynaCompressionTest)]
+for n in range(1, numSims):
+    ls_DynaSims.append(createLs_Dyna(str(n), engineeringDataSys, geometrySys, "Below", ls_DynaSims[n - 1]))
+
+# Save project
+Save(FilePath = os.path.join(workingDirectory, "{}.wbpj".format(geometrySys.DisplayText)), Overwrite = True)
+
+# Create Logs folder if it does not exist already
+logsFolderPath = os.path.join(workingDirectory, "Logs")
+if not os.path.exists(logsFolderPath):
+    os.mkdir(logsFolderPath)
+
+# File path to Log.xml file
+logFilePath = os.path.join(workingDirectory, "Logs", "Log.xml")
+
+# Create workflow Log file
+log = ET.Element("root")
+simIndex = ET.SubElement(log, "CurrentSimulationIndex")
+simIndex.text = "0"
+logTree = ET.ElementTree(log)
+
+# Save new Log.xml file
+with open(logFilePath, 'wb') as fileObj:
+    logTree.write(fileObj, encoding='utf-8')
+
+# Save project
+Save(Overwrite = True)
+
+# Run the Compression Test Mechanical script on the LS-Dyna Compression Test system
+scriptPath = os.path.join(workingDirectory, "Scripts", "CompressionTest.py")
+runScript(ls_DynaCompressionTest, "Model", scriptPath)
+
+# Save project
+Save(Overwrite = True)
+
+# Run the Sliding Test Mechanical script on all Sliding Test systems
+for i in range(int(log.find("./CurrentSimulationIndex").text), numSims):
+    scriptPath = os.path.join(workingDirectory, "Scripts", "SlidingTest.py")
+    runScript(ls_DynaSims[i], "Model", scriptPath)
+
+    # Reload the Log.xml file
+    logFilePath = os.path.join(workingDirectory, "Logs", "Log.xml")
+    logTree = ET.parse(logFilePath)
+    log = logTree.getroot()
+
+    # Save project
+    Save(Overwrite = True)
+
+    # Increment simulation index in Log file
+    log.find("./CurrentSimulationIndex").text = str(int(log.find("./CurrentSimulationIndex").text) + 1)
+
+    # Save Log csv file
+    with open(logFilePath, 'wb') as fileObj:
+        logTree.write(fileObj, encoding='utf-8')
+
+# Run Post-Processing script
+PostProcessing.run(workingDirectory)
