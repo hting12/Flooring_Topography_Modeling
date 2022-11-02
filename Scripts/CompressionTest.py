@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 # There does not seem to be any way to get the working directory programatically in SpaceClaim
 # It needs to be hardcoded
-workingDirectory = r"C:\Users\HTI2\OneDrive - University of Pittsburgh\Desktop\HMBL\Original"
+workingDirectory = r"/ihome/kbeschorner/hti2/Flooring_Topography_Modeling/Template"
 
 # Check if the hardcoded working directory path is valid
 # Throw an exception if it is not valid
